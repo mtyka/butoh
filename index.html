@@ -1,0 +1,31 @@
+<html>
+<head>
+<script type="text/javascript">
+    window.WebSocket = window.WebSocket || window.MozWebSocket;
+    var websocket = new WebSocket('ws://localhost:8080');
+    websocket.onopen = function () {
+      console.log("onopen"); 
+      websocket.send("SomeData");
+      websocket.send("SomeData");
+      websocket.send("SomeData");
+      websocket.send("SomeData");
+    };
+    websocket.onerror = function () {
+      console.log("onerror"); 
+    };
+    websocket.onmessage = function (message) {
+      console.log(message.data);
+    };
+</script>
+</head>
+
+<body>
+
+<!--
+<video width="100%" height="100%">
+  <source src="slowflowers.mp4" type="video/mp4">
+</video>
+-->
+
+</body>
+</html>
