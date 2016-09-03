@@ -28,7 +28,7 @@ void WritePngToMemory(size_t w, size_t h, const unsigned char *dataRGBA, std::ve
             PNG_INTERLACE_NONE,
             PNG_COMPRESSION_TYPE_DEFAULT,
             PNG_FILTER_TYPE_DEFAULT);
-    //png_set_compression_level(p, 1);
+    png_set_compression_level(p, 1);
     std::vector<unsigned char*> rows(h);
     for (size_t y = 0; y < h; ++y)
         rows[y] = (unsigned char*)dataRGBA + y * w * 4;
