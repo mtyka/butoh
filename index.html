@@ -6,6 +6,7 @@
     websocket.binaryType = "arraybuffer";
     websocket.onopen = function () {
       console.log("onopen"); 
+      //setInterval(function() {websocket.send("SomeData"); }, 50);
       websocket.send("SomeData");
     };
     websocket.onerror = function () {
@@ -13,9 +14,9 @@
     };
     websocket.onmessage = function (message) {
       console.log(message);
-
       data = message.data;
       document.getElementById("test").src = "data:image/png;base64, " + data;
+      websocket.send("SomeData");
     };
 </script>
 </head>

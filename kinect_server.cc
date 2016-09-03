@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "cppWebSockets/WebSocketServer.h"
+#include "websocketserver.h"
 #include "png.h"
 #include "base64.h"
 #include <string>
@@ -8,7 +8,7 @@
 
 
 
-std::string rawRGBAToBase64PNG(unsigned char* rgba) {
+std::string rawRGBAToBase64PNG(int w, int h, unsigned char* rgba) {
   std::vector<unsigned char> pngdata;
   WritePngToMemory(w,h,rgba,&pngdata);
   return base64_encode(pngdata.data(), pngdata.size());
@@ -26,7 +26,7 @@ public:
     virtual void   onError(    int socketID, const std::string& message );
 };
 
-int main( int argc, char **argv )
+int main2( int argc, char **argv )
 {
   KinectServer es = KinectServer( 8080 );
   es.run( );
