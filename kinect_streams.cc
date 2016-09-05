@@ -97,7 +97,7 @@ public:
 
 std::string rawRGBAToBase64PNG(int w, int h, unsigned char* rgba) {
   std::vector<unsigned char> pngdata;
-  WritePngToMemory(w,h,rgba,&pngdata);
+  WritePngToMemoryGrayAlpha(w,h,rgba,&pngdata);
   return base64_encode(pngdata.data(), pngdata.size());
 }
 
@@ -135,37 +135,58 @@ void KinectServer::onConnect( int socketID )
 void KinectServer::onMessage( int socketID, const std::string& data )
 {
     // Reply back with the same message
-  std::cout << "Received: " << socketID << "  " <<  data << std::endl;;
-    
+  //std::cout << "Received: " << socketID << "  " <<  data << std::endl;;
+  
   if (!listener_->waitForNewFrame(frames_, 10*1000)) // 10 sconds
   {
     std::cout << "timeout!" << std::endl;
     return;
   }
-  libfreenect2::Frame *rgb = frames_[libfreenect2::Frame::Color];
-  libfreenect2::Frame *ir = frames_[libfreenect2::Frame::Ir];
+  //libfreenect2::Frame *rgb = frames_[libfreenect2::Frame::Color];
+  //libfreenect2::Frame *ir = frames_[libfreenect2::Frame::Ir];
   libfreenect2::Frame *depth = frames_[libfreenect2::Frame::Depth];
 
-  std::cout << "Depth depth: " << depth->bytes_per_pixel;
-  std::cout << "IR depth: " << ir->bytes_per_pixel;
-  std::cout << "RGB depth: " << rgb->bytes_per_pixel;
+  //std::cout << "Depth depth: " << depth->bytes_per_pixel;
+  //std::cout << "IR depth: " << ir->bytes_per_pixel;
+  //std::cout << "RGB depth: " << rgb->bytes_per_pixel;
   
   const int pixels = depth->width * depth->height;
-  unsigned char *image = new unsigned char [pixels*4];
-  for(int s=0;s<pixels;s++) {
-    unsigned char grey = depth->data[s*4+2]; 
-    image[s*4] = grey; 
-    image[s*4+1] = grey; 
-    image[s*4+2] = grey;
-    image[s*4+3] = depth->data[s*4+3];
-  }
-      
-  std::string base64_image = rawRGBAToBase64PNG(depth->width, depth->height, image); 
-  delete [] image;
+  const int width = depth->width; 
+  const int height = depth->height;
+  const int image_depth = 2;
+  unsigned int cutoff = 512 << 16;
+   // 512 x 424
+  const int sx = 100;
+  const int sy = 80;
+  const int ow = 320;
+  const int oh = 240;
+  unsigned char *image = new unsigned char [ow*oh*image_depth];
 
-  this->send( socketID, base64_image);
-  
+  for(int y=sy;y<(sy+oh);y++) {
+    for(int x=sx;x<(sx+ow);x++) {
+      int s = y*width+ x;
+      // Convert from little endian. 
+      const unsigned int distance = (depth->data[s*4+3]&3) << 24 | 
+                  depth->data[s*4+2] << 16 | 
+                  depth->data[s*4+1] << 8 | 
+                  depth->data[s*4];
+      const unsigned char mask = (distance == 0 || distance > cutoff) ? 255 : 0; 
+      
+      int os = (y-sy)*ow + (x-sx);
+      image[os*image_depth] = 0; 
+      //image[os*image_depth+1] = 0; 
+      //image[os*image_depth+2] = 0;
+      image[os*image_depth+image_depth-1] = mask; 
+    }
+  }
   listener_->release(frames_);
+  std::string base64_image = rawRGBAToBase64PNG(ow, oh, image); 
+  //std::cout << base64_image.size() << std::endl;
+  delete [] image;
+  string json_out("{\"depthmask_png\":\"");
+  json_out += base64_image; 
+  json_out += "\"}";
+  this->send( socketID, json_out);
 }
 
 void KinectServer::onDisconnect( int socketID )
